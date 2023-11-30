@@ -5,108 +5,92 @@ import ru.vsu.cs.zagorodnev_g_a.Model.Polygon;
 import ru.vsu.cs.zagorodnev_g_a.Model.Vector2f;
 import ru.vsu.cs.zagorodnev_g_a.Model.Vector3f;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class ObjWriter {
 
-    public static void createObjFile(String absoluteFilePath) throws IOException {
-        String fileSeparator = System.getProperty("file.separator");
-        absoluteFilePath += fileSeparator + "file.obj";
-        File file = new File(absoluteFilePath);
-    }
+    public static void write(String fileName, Model model) {
+        File file = new File(fileName);
 
-    public static void writeToFile(Model model, File file) throws IOException {
-        String str = "";
-
-        str += writeVertices(model.vertices);
-        str += writeTextureVertices(model.textureVertices);
-        str += writeNormals(model.normals);
-        str += writePolygons(model.polygons);
-
-        toFile(str, file.getAbsolutePath());
-    }
-
-    protected static void toFile(String line, String fileName) throws FileNotFoundException {
-        PrintWriter printWriter = new PrintWriter(fileName);
-        printWriter.print(line);
-        printWriter.close();
-    }
-
-    public static String writeVertices(final ArrayList<Vector3f> v) {
-        String str = "";
-
-        for (int i = 0; i < v.size(); i++) {
-            final String vx = String.format("%.4f", v.get(i).x).replace(',', '.');
-            final String vy = String.format("%.4f", v.get(i).y).replace(',','.');
-            final String vz = String.format("%.4f", v.get(i).z).replace(',','.');
-            str = str + "v" + " " + vx + " " + vy + " " + vz + "\n";
+        try {
+            if (file.createNewFile()) {
+                System.out.println("Файл успешно создан: " + file.getName());
+            } else {
+                System.out.println("Файл уже существует.");
+            }
+        } catch (IOException e) {
+            throw new ObjWriterException(e.getMessage());
         }
-        str = str + "№ " + v.size() + " vertices";
-        str+="\n";
-        str+="\n";
-        return str;
-    }
 
-    public static String writeTextureVertices(final ArrayList<Vector2f> vt) {
-        String str = "";
-
-        for (int i = 0; i < vt.size(); i++) {
-            final String vtx = String.format("%.4f", vt.get(i).x).replace(',', '.');
-            final String vty = String.format("%.4f", vt.get(i).y).replace(',', '.');
-            str = str + "vt" + " " + vtx + " " + vty + "\n";
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+            writeVertices(writer, model.vertices);
+            writeTextureVertices(writer, model.textureVertices);
+            writeNormals(writer, model.normals);
+            writePolygons(writer, model.polygons);
+        } catch (IOException e) {
+            throw new ObjWriterException(e.getMessage());
         }
-        str = str + "№ " + vt.size() + " texture coords";
-        str+="\n";
-        str+="\n";
-        return str;
     }
 
-    public static String writeNormals(final ArrayList<Vector3f> vn) {
-        String str = "";
+    protected static void writeVertices(BufferedWriter writer, final ArrayList<Vector3f> v) throws IOException {
 
-        for (int i = 0; i < vn.size(); i++) {
-            final String vx = String.format("%.4f", vn.get(i).x).replace(',', '.');
-            final String vy = String.format("%.4f", vn.get(i).y).replace(',','.');
-            final String vz = String.format("%.4f", vn.get(i).z).replace(',','.');
-            str = str + "vn" + " " + vx + " " + vy + " " + vz + "\n";
+        for (Vector3f vector : v) {
+            final String vx = String.format("%.4f", vector.x).replace(',', '.');
+            final String vy = String.format("%.4f", vector.y).replace(',','.');
+            final String vz = String.format("%.4f", vector.z).replace(',','.');
+            writer.write("v " + vx + " " + vy + " " + vz);
+            writer.newLine();
         }
-        str = str + "№ " + vn.size() + " normals";
-        str+="\n";
-        str+="\n";
-        return str;
     }
 
-    public static String writePolygons(final ArrayList<Polygon> p) {
-        String str = "";
+    protected static void writeTextureVertices(BufferedWriter writer, final ArrayList<Vector2f> vt) throws IOException {
 
-        for (int i = 0; i < p.size(); i++){
-            str = str + "f ";
-            final Polygon pol = p.get(i);
+        for (Vector2f vector : vt) {
+            final String vtx = String.format("%.4f", vector.x).replace(',', '.');
+            final String vty = String.format("%.4f", vector.y).replace(',', '.');
+            writer.write("vt " + vtx + " " + vty);
+            writer.newLine();
+        }
+    }
+
+    protected static void writeNormals(BufferedWriter writer, final ArrayList<Vector3f> vn) throws IOException {
+
+        for (Vector3f vector : vn) {
+            final String vx = String.format("%.4f", vector.x).replace(',', '.');
+            final String vy = String.format("%.4f", vector.y).replace(',','.');
+            final String vz = String.format("%.4f", vector.z).replace(',','.');
+            writer.write("vn " + vx + " " + vy + " " + vz);
+            writer.newLine();
+        }
+    }
+
+    protected static void writePolygons(BufferedWriter writer, final ArrayList<Polygon> p) throws IOException {
+
+        for (Polygon pol : p){
+            writer.write("f ");
+            List<Integer> vertexIndices = pol.getVertexIndices();
+            List<Integer> textureVertexIndices = pol.getTextureVertexIndices();
+            List<Integer> normalIndices = pol.getNormalIndices();
+
             for (int j = 0; j < pol.getVertexIndices().size(); j++) {
-                if (pol.getTextureVertexIndices().isEmpty() && pol.getNormalIndices().isEmpty()){
-                    str = str  + (pol.getVertexIndices().get(j) + 1) +  " ";
+                if (textureVertexIndices.isEmpty() && normalIndices.isEmpty()){
+                    writer.write((vertexIndices.get(j) + 1) + " ");
                 }
-                if (!pol.getTextureVertexIndices().isEmpty() && pol.getNormalIndices().isEmpty()) {
-                    str = str + (pol.getVertexIndices().get(j) + 1) + "/" + (pol.getTextureVertexIndices().get(j) + 1) + " ";
+                if (!textureVertexIndices.isEmpty() && normalIndices.isEmpty()) {
+                    writer.write((vertexIndices.get(j) + 1) + "/" + (textureVertexIndices.get(j) + 1) + " ");
                 }
-                if (!pol.getTextureVertexIndices().isEmpty() && !pol.getNormalIndices().isEmpty()) {
-                    str = str + (pol.getVertexIndices().get(j) + 1) + "/" + (pol.getTextureVertexIndices().get(j) + 1) + "/"
-                            + (pol.getNormalIndices().get(j) + 1) + " ";
+                if (!textureVertexIndices.isEmpty() && !normalIndices.isEmpty()) {
+                     writer.write((vertexIndices.get(j) + 1) + "/" + (textureVertexIndices.get(j) + 1) + "/"
+                            + (normalIndices.get(j) + 1) + " ");
                 }
-                if (pol.getTextureVertexIndices().isEmpty() && !pol.getNormalIndices().isEmpty()) {
-                    str = str + (pol.getVertexIndices().get(j) + 1) + "//" + (pol.getNormalIndices().get(j) + 1) + " ";
+                if (textureVertexIndices.isEmpty() && !normalIndices.isEmpty()) {
+                     writer.write((vertexIndices.get(j) + 1) + "//" + (normalIndices.get(j) + 1) + " ");
                 }
             }
-            str = str  + "\n";
+            writer.newLine();
         }
-        str = str + "№ " + p.size() + " polygons";
-        str+="\n";
-        str+="\n";
-        return str;
     }
 }

@@ -12,50 +12,40 @@ import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static ru.vsu.cs.zagorodnev_g_a.ObjWriter.ObjWriter.write;
+
 public class Main {
-    public static void main(String[] args) {
-        Model m1 = new Model();
+    public static void main(String[] args) throws IOException {
+        Path fileName = Path.of("/Users/goshaapolonov/IdeaProjects/ObjWriter/src/ru/vsu/cs/zagorodnev_g_a/Model.obj");
+        String fileContent = Files.readString(fileName);
 
-        String fileSeparator = System.getProperty("file.separator");
+        System.out.println("Loading model ...");
+        Model model = ObjReader.read(fileContent);
 
-        //чтение файла
-        Path fileName = Path.of("E:/Projects/ru.vsu.cs.zagorodnev_g_a/ObjWriter/src/ru/vsu/cs/zagorodnev_g_a/TestModel.obj");
+        System.out.println("Vertices: " + model.vertices.size());
+        System.out.println("Texture vertices: " + model.textureVertices.size());
+        System.out.println("Normals: " + model.normals.size());
+        System.out.println("Polygons: " + model.polygons.size());
 
-        Pattern pattern = Pattern.compile("[а-яё]");
-        Matcher matcher = pattern.matcher(fileName.toString().toLowerCase());
-        if (matcher.find()) {
-            throw new ObjReaderException("Can't read file with outsider symbols in its name", 1);
-        }
+        String fileNameOut = "/Users/goshaapolonov/Downloads/output.obj";
+        ObjWriter.write(fileNameOut, model);
 
-        try {
-            String fileContent = Files.readString(fileName);
-            System.out.println("Loading model ...");
-            m1 = ObjReader.read(fileContent);
+        System.out.println("Model has been written to " + fileNameOut);
 
-            System.out.println("Vertices: " + m1.getVertices().size());
-            System.out.println("Texture vertices: " + m1.getTextureVertices().size());
-            System.out.println("Normals: " + m1.getNormals().size());
-            System.out.println("Polygons: " + m1.getPolygons().size());
-        } catch (IOException exception) {
-            throw new ObjReaderException("File not found", 1);
-        }
+        Path fileName2 = Path.of("/Users/goshaapolonov/IdeaProjects/ObjWriter/src/ru/vsu/cs/zagorodnev_g_a/Model.obj");
+        String fileContent2 = Files.readString(fileName2);
 
-        //запись файла
-        String filePath = "E:" + fileSeparator + "test.obj";
-        try {
-            System.out.println("Создаём файл");
-            ObjWriter.createObjFile(filePath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        System.out.println("Loading model ...");
+        Model model2 = ObjReader.read(fileContent2);
 
-        File f = new File(filePath);
-        try {
-            System.out.println("Запись в файл");
-            ObjWriter.writeToFile(m1, f);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        System.out.println("Модель сохранена в файл");
+        System.out.println("Vertices: " + model2.vertices.size());
+        System.out.println("Texture vertices: " + model2.textureVertices.size());
+        System.out.println("Normals: " + model2.normals.size());
+        System.out.println("Polygons: " + model2.polygons.size());
+
+        String fileNameOut2 = "/Users/goshaapolonov/Downloads/output2.obj";
+        ObjWriter.write(fileNameOut2, model2);
+
+        System.out.println("Model has been written to " + fileNameOut2);
     }
 }
